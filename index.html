@@ -5,6 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>計算機</title>
   <style>
+    @keyframes rgb-border {
+      0%   { border-color: #ff0080; box-shadow: 0 0 20px #ff0080, 0 0 40px #ff0080, 0 0 80px rgba(255,0,128,0.3); }
+      17%  { border-color: #ff8800; box-shadow: 0 0 20px #ff8800, 0 0 40px #ff8800, 0 0 80px rgba(255,136,0,0.3); }
+      33%  { border-color: #ffff00; box-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00, 0 0 80px rgba(255,255,0,0.3); }
+      50%  { border-color: #00ff88; box-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88, 0 0 80px rgba(0,255,136,0.3); }
+      67%  { border-color: #00ccff; box-shadow: 0 0 20px #00ccff, 0 0 40px #00ccff, 0 0 80px rgba(0,204,255,0.3); }
+      83%  { border-color: #8800ff; box-shadow: 0 0 20px #8800ff, 0 0 40px #8800ff, 0 0 80px rgba(136,0,255,0.3); }
+      100% { border-color: #ff0080; box-shadow: 0 0 20px #ff0080, 0 0 40px #ff0080, 0 0 80px rgba(255,0,128,0.3); }
+    }
+
+    @keyframes bg-pulse {
+      0%, 100% { background-position: 0% 50%; }
+      50%       { background-position: 100% 50%; }
+    }
+
+    @keyframes scanline {
+      0%   { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+
+    @keyframes display-glow {
+      0%, 100% { text-shadow: 0 0 8px #00ffcc, 0 0 16px #00ffcc; }
+      50%       { text-shadow: 0 0 16px #00ffcc, 0 0 32px #00ffcc, 0 0 48px rgba(0,255,204,0.5); }
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -16,20 +41,57 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      background: #1a1a2e;
+      background: #050508;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 200px;
+      background: linear-gradient(transparent, rgba(0,255,136,0.04), transparent);
+      animation: scanline 6s linear infinite;
+      pointer-events: none;
+    }
+
+    .center-anchor {
+      display: flex;
+      justify-content: flex-end;
+      width: 460px;
     }
 
     .calculator {
-      background: #16213e;
+      background: rgba(8, 8, 16, 0.95);
       border-radius: 20px;
       padding: 24px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      width: 320px;
+      width: 460px;
+      border: 2px solid #ff0080;
+      animation: rgb-border 4s linear infinite;
+      transition: width 0.3s ease;
+      position: relative;
+    }
+
+    .calculator::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.03) 50%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .calculator.expanded {
+      width: 700px;
     }
 
     .display {
-      background: #0f3460;
+      background: rgba(0, 0, 0, 0.7);
       border-radius: 12px;
       padding: 20px 16px 12px;
       margin-bottom: 20px;
@@ -38,10 +100,12 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
+      border: 1px solid rgba(0,255,204,0.3);
+      box-shadow: inset 0 0 20px rgba(0,255,204,0.05), 0 0 10px rgba(0,255,204,0.1);
     }
 
     .display .expression {
-      color: #a0aec0;
+      color: rgba(0,255,204,0.5);
       font-size: 14px;
       min-height: 20px;
       margin-bottom: 4px;
@@ -51,134 +115,252 @@
     }
 
     .display .current {
-      color: #e2e8f0;
+      color: #00ffcc;
       font-size: 36px;
       font-weight: 300;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      animation: display-glow 2s ease-in-out infinite;
+    }
+
+    .function-toggle {
+      margin-bottom: 16px;
+      text-align: right;
+      color: rgba(0,255,204,0.7);
+      font-size: 14px;
+    }
+
+    .function-toggle input {
+      margin-right: 8px;
+      accent-color: #00ffcc;
+    }
+
+    .calculator-body {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .function-panel-wrap {
+      width: 0;
+      overflow: hidden;
+      transition: width 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .function-panel-wrap.visible {
+      width: 240px;
+      padding-right: 16px;
     }
 
     .buttons {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
     }
 
+    .function-buttons {
+      grid-template-columns: repeat(3, 1fr);
+      width: 224px;
+    }
+
+    .base-buttons {
+      grid-template-columns: repeat(5, 1fr);
+      flex-shrink: 0;
+      width: 412px;
+    }
+
     button {
-      border: none;
       border-radius: 12px;
       font-size: 20px;
-      font-weight: 400;
+      font-weight: 500;
       padding: 18px 0;
       cursor: pointer;
-      transition: all 0.1s ease;
+      transition: all 0.15s ease;
       outline: none;
+      position: relative;
+      letter-spacing: 0.5px;
     }
 
     button:active {
-      transform: scale(0.94);
+      transform: scale(0.93);
     }
 
     .btn-number {
-      background: #1a365d;
-      color: #e2e8f0;
+      background: rgba(0, 120, 220, 0.15);
+      color: #66aaff;
+      border: 1px solid rgba(0,120,220,0.4);
     }
 
     .btn-number:hover {
-      background: #2a4a7f;
+      background: rgba(0, 120, 220, 0.35);
+      border-color: #0088ff;
+      box-shadow: 0 0 12px rgba(0,136,255,0.6), inset 0 0 8px rgba(0,136,255,0.1);
+      color: #aad4ff;
     }
 
     .btn-operator {
-      background: #2d3748;
-      color: #90cdf4;
+      background: rgba(0, 220, 100, 0.15);
+      color: #00ee77;
+      border: 1px solid rgba(0,200,80,0.4);
     }
 
     .btn-operator:hover {
-      background: #4a5568;
+      background: rgba(0, 220, 100, 0.35);
+      border-color: #00ff88;
+      box-shadow: 0 0 12px rgba(0,255,136,0.6), inset 0 0 8px rgba(0,255,136,0.1);
+      color: #88ffcc;
     }
 
     .btn-clear {
-      background: #742a2a;
-      color: #feb2b2;
+      background: rgba(255, 30, 80, 0.15);
+      color: #ff4466;
+      border: 1px solid rgba(255,30,80,0.4);
     }
 
     .btn-clear:hover {
-      background: #9b2c2c;
+      background: rgba(255, 30, 80, 0.35);
+      border-color: #ff2255;
+      box-shadow: 0 0 12px rgba(255,34,85,0.7), inset 0 0 8px rgba(255,34,85,0.1);
+      color: #ff88aa;
     }
 
     .btn-equals {
-      background: #2b6cb0;
-      color: white;
+      background: rgba(160, 0, 255, 0.2);
+      color: #cc66ff;
+      border: 1px solid rgba(160,0,255,0.5);
     }
 
     .btn-equals:hover {
-      background: #3182ce;
+      background: rgba(160, 0, 255, 0.45);
+      border-color: #aa00ff;
+      box-shadow: 0 0 16px rgba(160,0,255,0.8), inset 0 0 8px rgba(160,0,255,0.2);
+      color: #ee99ff;
     }
 
     .btn-zero {
       grid-column: span 2;
     }
 
-    .btn-sign {
-      background: #2d3748;
-      color: #90cdf4;
+    .btn-sign, .btn-percent {
+      background: rgba(0, 220, 100, 0.15);
+      color: #00ee77;
+      border: 1px solid rgba(0,200,80,0.4);
     }
 
-    .btn-sign:hover {
-      background: #4a5568;
-    }
-
-    .btn-percent {
-      background: #2d3748;
-      color: #90cdf4;
-    }
-
-    .btn-percent:hover {
-      background: #4a5568;
+    .btn-sign:hover, .btn-percent:hover {
+      background: rgba(0, 220, 100, 0.35);
+      border-color: #00ff88;
+      box-shadow: 0 0 12px rgba(0,255,136,0.6), inset 0 0 8px rgba(0,255,136,0.1);
+      color: #88ffcc;
     }
 
     .btn-backspace {
-      background: #744210;
-      color: #fbd38d;
+      background: rgba(255, 30, 80, 0.15);
+      color: #ff4466;
+      border: 1px solid rgba(255,30,80,0.4);
       font-size: 18px;
     }
 
     .btn-backspace:hover {
-      background: #975a16;
+      background: rgba(255, 30, 80, 0.35);
+      border-color: #ff2255;
+      box-shadow: 0 0 12px rgba(255,34,85,0.7), inset 0 0 8px rgba(255,34,85,0.1);
+      color: #ff88aa;
+    }
+
+    .btn-function {
+      background: rgba(255, 160, 0, 0.12);
+      color: #ffaa33;
+      border: 1px solid rgba(255,160,0,0.35);
+    }
+
+    .btn-function:hover {
+      background: rgba(255, 160, 0, 0.3);
+      border-color: #ffaa00;
+      box-shadow: 0 0 12px rgba(255,160,0,0.6), inset 0 0 8px rgba(255,160,0,0.1);
+      color: #ffcc77;
+    }
+
+    .btn-parenthesis {
+      background: rgba(0, 200, 255, 0.12);
+      color: #33ccff;
+      border: 1px solid rgba(0,200,255,0.35);
+    }
+
+    .btn-parenthesis:hover {
+      background: rgba(0, 200, 255, 0.3);
+      border-color: #00ccff;
+      box-shadow: 0 0 12px rgba(0,200,255,0.6), inset 0 0 8px rgba(0,200,255,0.1);
+      color: #88ddff;
     }
   </style>
 </head>
 <body>
-  <div class="calculator">
-    <div class="display">
-      <div class="expression" id="expression"></div>
-      <div class="current" id="current">0</div>
-    </div>
-    <div class="buttons">
-      <button class="btn-clear" onclick="clearAll()">AC</button>
-      <button class="btn-sign" onclick="toggleSign()">+/-</button>
-      <button class="btn-percent" onclick="percent()">%</button>
-      <button class="btn-operator" onclick="setOperator('÷')">÷</button>
+  <div class="center-anchor">
+    <div class="calculator">
+      <div class="display">
+        <div class="expression" id="expression"></div>
+        <div class="current" id="current">0</div>
+      </div>
+      <div class="function-toggle">
+        <label><input type="checkbox" id="toggle-functions" onchange="toggleFunctions()">関数</label>
+      </div>
+      <div class="calculator-body">
+        <div class="function-panel-wrap">
+          <div class="buttons function-buttons">
+            <button class="btn-function" onclick="toggleMode()">DEG</button>
+            <button class="btn-function" onclick="calculateFunction('sin')">sin</button>
+            <button class="btn-function" onclick="calculateFunction('cos')">cos</button>
 
-      <button class="btn-number" onclick="appendNumber('7')">7</button>
-      <button class="btn-number" onclick="appendNumber('8')">8</button>
-      <button class="btn-number" onclick="appendNumber('9')">9</button>
-      <button class="btn-operator" onclick="setOperator('×')">×</button>
+            <button class="btn-function" onclick="calculateFunction('tan')">tan</button>
+            <button class="btn-function" onclick="calculateFunction('log')">log</button>
+            <button class="btn-function" onclick="calculateFunction('asin')">asin</button>
 
-      <button class="btn-number" onclick="appendNumber('4')">4</button>
-      <button class="btn-number" onclick="appendNumber('5')">5</button>
-      <button class="btn-number" onclick="appendNumber('6')">6</button>
-      <button class="btn-operator" onclick="setOperator('-')">−</button>
+            <button class="btn-function" onclick="calculateFunction('acos')">acos</button>
+            <button class="btn-function" onclick="calculateFunction('atan')">atan</button>
+            <button class="btn-function" onclick="calculateFunction('ln')">ln</button>
 
-      <button class="btn-number" onclick="appendNumber('1')">1</button>
-      <button class="btn-number" onclick="appendNumber('2')">2</button>
-      <button class="btn-number" onclick="appendNumber('3')">3</button>
-      <button class="btn-operator" onclick="setOperator('+')">+</button>
+            <button class="btn-function" onclick="calculateFunction('sqrt')">√</button>
+            <button class="btn-function" onclick="calculateFunction('square')">x²</button>
+            <button class="btn-function" onclick="calculateFunction('pi')">π</button>
 
-      <button class="btn-number btn-zero" onclick="appendNumber('0')">0</button>
-      <button class="btn-number" onclick="appendDecimal()">.</button>
-      <button class="btn-equals" onclick="calculate()">=</button>
+            <button class="btn-function" onclick="calculateFunction('e')">e</button>
+            <button class="btn-function" onclick="calculateFunction('exp')">e^x</button>
+            <div></div>
+          </div>
+        </div>
+        <div class="buttons base-buttons">
+          <button class="btn-clear" onclick="clearAll()">AC</button>
+          <button class="btn-sign" onclick="toggleSign()">+/-</button>
+          <button class="btn-percent" onclick="percent()">%</button>
+          <button class="btn-operator" onclick="setOperator('÷')">÷</button>
+          <button class="btn-backspace" onclick="backspace()">⌫</button>
+
+          <button class="btn-number" onclick="appendNumber('7')">7</button>
+          <button class="btn-number" onclick="appendNumber('8')">8</button>
+          <button class="btn-number" onclick="appendNumber('9')">9</button>
+          <button class="btn-operator" onclick="setOperator('×')">×</button>
+          <button class="btn-function" onclick="setOperator('^')">^</button>
+
+          <button class="btn-number" onclick="appendNumber('4')">4</button>
+          <button class="btn-number" onclick="appendNumber('5')">5</button>
+          <button class="btn-number" onclick="appendNumber('6')">6</button>
+          <button class="btn-operator" onclick="setOperator('-')">−</button>
+          <button class="btn-parenthesis" onclick="appendParenthesis('(')">(</button>
+
+          <button class="btn-number" onclick="appendNumber('1')">1</button>
+          <button class="btn-number" onclick="appendNumber('2')">2</button>
+          <button class="btn-number" onclick="appendNumber('3')">3</button>
+          <button class="btn-operator" onclick="setOperator('+')">+</button>
+          <button class="btn-parenthesis" onclick="appendParenthesis(')')">)</button>
+
+          <button class="btn-number btn-zero" onclick="appendNumber('0')">0</button>
+          <button class="btn-number" onclick="appendDecimal()">.</button>
+          <button class="btn-equals" onclick="calculate()">=</button>
+          <div></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -187,6 +369,7 @@
     let previous = null;
     let operator = null;
     let resetNext = false;
+    let degreeMode = true;
 
     const currentEl = document.getElementById('current');
     const expressionEl = document.getElementById('expression');
@@ -247,6 +430,7 @@
           }
           result = previous / curr;
           break;
+        case '^': result = Math.pow(previous, curr); break;
       }
 
       if (!silent) {
@@ -288,6 +472,69 @@
       }
     }
 
+    function backspace() {
+      if (current !== 'エラー') {
+        current = current.length > 1 ? current.slice(0, -1) : '0';
+        updateDisplay();
+      }
+    }
+
+    function toggleFunctions() {
+      const wrap = document.querySelector('.function-panel-wrap');
+      const calc = document.querySelector('.calculator');
+      const checkbox = document.getElementById('toggle-functions');
+      wrap.classList.toggle('visible', checkbox.checked);
+      calc.classList.toggle('expanded', checkbox.checked);
+    }
+
+    function calculateFunction(func) {
+      if (current === 'エラー') return;
+      const value = parseFloat(current);
+      let result;
+      const radian = degreeMode ? value * Math.PI / 180 : value;
+
+      switch (func) {
+        case 'sin': result = Math.sin(radian); break;
+        case 'cos': result = Math.cos(radian); break;
+        case 'tan': result = Math.tan(radian); break;
+        case 'asin': result = degreeMode ? Math.asin(value) * 180 / Math.PI : Math.asin(value); break;
+        case 'acos': result = degreeMode ? Math.acos(value) * 180 / Math.PI : Math.acos(value); break;
+        case 'atan': result = degreeMode ? Math.atan(value) * 180 / Math.PI : Math.atan(value); break;
+        case 'log': result = Math.log10(value); break;
+        case 'ln': result = Math.log(value); break;
+        case 'sqrt': result = Math.sqrt(value); break;
+        case 'square': result = value * value; break;
+        case 'pi': result = Math.PI; break;
+        case 'e': result = Math.E; break;
+        case 'exp': result = Math.exp(value); break;
+      }
+
+      if (isNaN(result) || !isFinite(result)) {
+        current = 'エラー';
+      } else {
+        result = parseFloat(result.toPrecision(12));
+        current = String(result);
+      }
+      resetNext = true;
+      updateDisplay();
+    }
+
+    function appendParenthesis(paren) {
+      if (resetNext) {
+        current = paren;
+        resetNext = false;
+      } else {
+        current += paren;
+      }
+      updateDisplay();
+    }
+
+    function toggleMode() {
+      degreeMode = !degreeMode;
+      const modeBtn = document.querySelector('.btn-function[onclick*="toggleMode"]');
+      modeBtn.textContent = degreeMode ? 'DEG' : 'RAD';
+    }
+
     document.addEventListener('keydown', (e) => {
       if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
       else if (e.key === '.') appendDecimal();
@@ -295,6 +542,7 @@
       else if (e.key === '-') setOperator('-');
       else if (e.key === '*') setOperator('×');
       else if (e.key === '/') { e.preventDefault(); setOperator('÷'); }
+      else if (e.key === '^') setOperator('^');
       else if (e.key === 'Enter' || e.key === '=') calculate();
       else if (e.key === 'Escape') clearAll();
       else if (e.key === 'Backspace') {
